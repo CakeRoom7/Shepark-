@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShePark Live Boutique</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>🛍️ ShePark Live Boutique</h1>
+      <div class="auth-actions">
+        <button id="showLoginBtn">Login</button>
+        <button id="showSignupBtn">Sign Up</button>
+        <button id="logoutBtn" class="hidden">Logout</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="authCard" class="card auth-card">
+        <h2 id="authTitle">Login</h2>
+        <form id="authForm">
+          <label>Email</label>
+          <input id="authEmail" type="email" required placeholder="you@example.com" />
+          <label>Password</label>
+          <input id="authPassword" type="password" required minlength="6" placeholder="******" />
+          <button type="submit">Continue</button>
+        </form>
+      </section>
+
+      <section id="appSection" class="hidden">
+        <section class="card home">
+          <h2>Home</h2>
+          <p>Welcome to your real-time boutique. Search products and connect with sellers instantly.</p>
+          <div class="search-row">
+            <input id="searchInput" type="text" placeholder="Search products..." />
+            <button id="clearSearchBtn">Clear</button>
+          </div>
+          <div id="products" class="products"></div>
+        </section>
+
+        <section class="card upi">
+          <h2>UPI App Connect</h2>
+          <form id="upiForm" class="grid-two">
+            <div>
+              <label>UPI ID</label>
+              <input id="upiId" type="text" placeholder="name@bank" required />
+            </div>
+            <div>
+              <label>Preferred App</label>
+              <select id="upiApp" required>
+                <option value="">Select app</option>
+                <option>PhonePe</option>
+                <option>Google Pay</option>
+                <option>Paytm</option>
+                <option>BHIM</option>
+              </select>
+            </div>
+            <button type="submit">Save UPI Connection</button>
+          </form>
+          <p id="upiStatus" class="muted"></p>
+        </section>
+
+        <section class="card seller-room">
+          <h2>Seller's Room (Real-Time)</h2>
+          <div id="chatMessages" class="chat-box"></div>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" type="text" placeholder="Ask seller about stock, size, shipping..." required />
+            <button type="submit">Send</button>
+          </form>
+        </section>
+
+        <section class="card billing">
+          <h2>Billing Section</h2>
+          <form id="billForm" class="grid-two">
+            <div>
+              <label>Customer Name</label>
+              <input id="customerName" required placeholder="Customer name" />
+            </div>
+            <div>
+              <label>Item Name</label>
+              <input id="itemName" required placeholder="Item" />
+            </div>
+            <div>
+              <label>Quantity</label>
+              <input id="qty" type="number" required min="1" value="1" />
+            </div>
+            <div>
+              <label>Price (₹)</label>
+              <input id="price" type="number" required min="1" value="100" />
+            </div>
+            <button type="submit">Generate PDF Bill</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
