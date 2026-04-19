@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>She PARK Designs</title>
+    <!-- Core Engine -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root { --primary: #db2777; }
+        body { font-family: 'Inter', sans-serif; background-color: #fff1f2; -webkit-tap-highlight-color: transparent; }
+
+        /* MRP Strike */
+        .mrp-strike {
+            position: relative; color: #94a3b8; text-decoration: none; display: inline-block;
+        }
+        .mrp-strike::after {
+            content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            background: #ef4444; transform: rotate(-15deg);
+        }
+
+        /* Banner Marquee */
+        .marquee { white-space: nowrap; overflow: hidden; display: flex; align-items: center; background: #facc15; color: #831843; }
+        .marquee-content { display: inline-block; animation: scroll 30s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* Sections */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* Selection States */
+        .size-btn { border: 2px solid #fbcfe8; transition: 0.3s; background: white; }
+        .size-btn.selected { background: #db2777; color: white; border-color: #db2777; }
+        .filter-chip { transition: 0.2s; border: 1px solid #fbcfe8; font-size: 10px; font-weight: bold; padding: 6px 16px; border-radius: 99px; flex-shrink: 0; }
+        .filter-chip.active { background: #db2777; color: white; border-color: #db2777; }
+
+        /* Receipt Canvas */
+        #bill-capture { position: fixed; left: -9999px; top: 0; width: 400px; background: white; padding: 30px; color: black; border: 1px solid #ddd; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .social-link { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .social-link:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <!-- Header & Scrolling Offer Banner -->
+    <header class="bg-[#db2777] text-white sticky top-0 z-[100] shadow-xl">
+        <div class="px-5 py-4 flex justify-between items-center">
+            <h1 id="brand-logo" class="text-2xl font-black tracking-tighter select-none cursor-pointer">She PARK Designs</h1>
+            <button onclick="toggleSideMenu(true)" class="p-1">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            </button>
+        </div>
+        <div class="marquee py-1.5 font-bold uppercase border-t border-pink-500">
+            <div id="banner-text" class="marquee-content">Welcome to She PARK Designs ✨ New Collections Added Daily ✨ Quality Guaranteed</div>
+        </div>
+    </header>
+
+    <!-- Side Sidebar -->
+    <div id="side-overlay" class="fixed inset-0 bg-black/40 z-[110] hidden backdrop-blur-sm" onclick="toggleSideMenu(false)">
+        <div class="bg-white w-72 h-full p-8 shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+            <h2 class="font-black text-pink-600 text-2xl border-b-2 border-pink-50 pb-4 mb-8 italic">MENU</h2>
+            <div class="flex flex-col gap-6 text-lg font-bold text-gray-700">
+                <button onclick="navigate('home')" class="text-left flex items-center gap-3">🏠 Home Store</button>
+                <button onclick="navigate('cart')" class="text-left flex items-center gap-3">🛒 My Cart</button>
+                <button onclick="navigate('orders')" class="text-left flex items-center gap-3">📦 My Orders</button>
+                <button onclick="navigate('contact')" class="text-left flex items-center gap-3">📞 Contact Details</button>
+            </div>
+            <p class="mt-auto text-[10px] text-gray-300 uppercase font-black">© All Copyrights Received @ She PARK Designs Online Store ™ 2026-27</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="p-4 pb-32">
+        
+        <!-- Home View: Filters & Grid -->
+        <section id="sec-home" class="view-section active">
+            <div class="mb-4 flex gap-2">
+                <input type="text" id="home-search" placeholder="Search styles..." class="flex-1 bg-white p-3 rounded-xl shadow-sm outline-none border focus:border-pink-500" oninput="renderHome()">
+                <select id="home-sort" onchange="renderHome()" class="bg-white px-2 rounded-xl shadow-sm font-bold text-xs outline-none">
+                    <option value="new">Latest</option>
+                    <option value="low">Price: Low</option>
+                    <option value="high">Price: High</option>
+                </select>
+            </div>
+            
+            <div class="mb-6 space-y-3">
+                <div id="filter-categories" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+                <div id="filter-sizes" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Product Page -->
+        <section id="sec-details" class="view-section">
+            <button onclick="navigate('home')" class="mb-4 text-pink-600 font-bold flex items-center gap-2">
+                <span class="bg-white px-2 py-1 rounded-full shadow-sm">←</span> BACK
+            </button>
+            <div id="details-inject"></div>
+        </section>
+
+        <!-- Form-Based Checkout -->
+        <section id="sec-checkout" class="view-section">
+            <h2 class="text-2xl font-black mb-6">Delivery <span class="text-pink-600">Details</span></h2>
+            <form id="checkout-form" class="bg-white p-6 rounded-[2rem] shadow-xl space-y-4 border-2 border-pink-50">
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase">WhatsApp Number</label>
+                    <input type="tel" id="cust-whatsapp" class="w-full bg-gray-50 p-4 rounded-xl outline-none border focus:border-pink-500" placeholder="10 Digit Mobile Number" required>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Shipping Address</label>
+                    <textarea id="cust-address" class="w-full bg-gray-50 p-4 rounded-xl outline-none border focus:border-pink-500" rows="4" placeholder="House, Area, Landmark, Pincode" required></textarea>
+                </div>
+                <div id="checkout-total-area" class="py-4 border-t border-b border-dashed"></div>
+                <button type="submit" class="w-full bg-pink-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl">ORDER VIA UPI</button>
+            </form>
+        </section>
+
+        <!-- Cart Page -->
+        <section id="sec-cart" class="view-section">
+            <h2 class="text-3xl font-black mb-6">Cart</h2>
+            <div id="cart-list" class="space-y-4"></div>
+            <div id="cart-summary" class="mt-10"></div>
+        </section>
+
+        <!-- Order Tracking -->
+        <section id="sec-orders" class="view-section">
+            <h2 class="text-3xl font-black mb-6">Orders</h2>
+            <div id="orders-list" class="space-y-4"></div>
+        </section>
+
+        <!-- Contact & Social Media -->
+        <section id="sec-contact" class="view-section">
+            <div class="bg-white p-8 rounded-[3rem] shadow-xl text-center border">
+                <h2 class="text-2xl font-black text-pink-600 mb-6">Contact Us</h2>
+                <div id="contact-info-inject" class="mb-10"></div>
+                
+                <div class="border-t pt-8">
+                    <h3 class="text-xs font-black text-gray-300 uppercase tracking-widest mb-6">Social Links</h3>
+                    <div id="social-links-inject" class="flex justify-center gap-6"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Portal (Secret) -->
+        <section id="sec-admin" class="view-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-red-600">ADMIN</h2>
+                <button onclick="navigate('home')" class="text-xs bg-gray-200 px-3 py-1 rounded-full font-bold">Exit</button>
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-6">
+                <button onclick="adminTab('add')" class="bg-pink-600 text-white px-5 py-2 rounded-full text-xs font-bold shrink-0">Add Item</button>
+                <button onclick="adminTab('inventory')" class="bg-purple-600 text-white px-5 py-2 rounded-full text-xs font-bold shrink-0">Inventory</button>
+                <button onclick="adminTab('orders')" class="bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-bold shrink-0">Orders</button>
+                <button onclick="adminTab('settings')" class="bg-green-600 text-white px-5 py-2 rounded-full text-xs font-bold shrink-0">Settings</button>
+            </div>
+
+            <!-- Tab: Product Form -->
+            <div id="adm-add" class="admin-tab">
+                <form id="product-form" class="bg-white p-5 rounded-[2rem] shadow-xl space-y-3">
+                    <input type="hidden" id="edit-id">
+                    <input type="text" id="p-name" placeholder="Item Name" class="w-full bg-gray-50 p-3 rounded-xl border outline-none" required>
+                    <div class="flex gap-2">
+                        <input type="number" id="p-mrp" placeholder="MRP" class="w-1/2 bg-gray-50 p-3 rounded-xl border outline-none" required>
+                        <input type="number" id="p-offer" placeholder="Offer Price" class="w-1/2 bg-gray-50 p-3 rounded-xl border outline-none" required>
+                    </div>
+                    <input type="text" id="p-category" placeholder="Category (e.g. Sarees)" class="w-full bg-gray-50 p-3 rounded-xl border outline-none">
+                    <input type="text" id="p-sizes" placeholder="Available Sizes (M, L, XL...)" class="w-full bg-gray-50 p-3 rounded-xl border outline-none">
+                    <input type="text" id="p-delivery" placeholder="Expected Delivery (e.g. 5 May)" class="w-full bg-gray-50 p-3 rounded-xl border outline-none">
+                    <input type="text" id="p-code" placeholder="Internal Admin Code" class="w-full bg-gray-50 p-3 rounded-xl border outline-none">
+                    <textarea id="p-specs" placeholder="Specifications" class="w-full bg-gray-50 p-3 rounded-xl border outline-none" rows="2"></textarea>
+                    <input type="file" id="p-img" accept="image/*" class="text-xs">
+                    <button type="submit" class="w-full bg-pink-600 text-white py-4 rounded-xl font-black">PUBLISH ITEM</button>
+                </form>
+            </div>
+
+            <!-- Tab: Admin Inventory -->
+            <div id="adm-inventory" class="admin-tab hidden space-y-2">
+                <div id="adm-p-list"></div>
+            </div>
+
+            <!-- Tab: Admin Settings -->
+            <div id="adm-settings" class="admin-tab hidden space-y-4">
+                <div class="bg-white p-5 rounded-[2rem] shadow-xl space-y-4">
+                    <input type="text" id="set-banner" placeholder="Banner Text" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="text" id="set-upi" placeholder="Merchant UPI ID" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="number" id="set-ship" placeholder="Shipping Fee" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="text" id="set-phone" placeholder="Contact Phone" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="text" id="set-ig" placeholder="Instagram URL" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="text" id="set-fb" placeholder="Facebook URL" class="w-full border p-3 rounded-xl text-sm">
+                    <input type="text" id="set-wa" placeholder="WhatsApp Number" class="w-full border p-3 rounded-xl text-sm">
+                    <button onclick="saveSettings()" class="w-full bg-black text-white py-4 rounded-xl font-black">SAVE ALL</button>
+                </div>
+            </div>
+
+            <!-- Tab: Admin Orders -->
+            <div id="adm-orders" class="admin-tab hidden space-y-4">
+                <div id="adm-o-list"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Hidden Bill Generator Area -->
+    <div id="bill-capture">
+        <h1 style="text-align: center; color: #db2777; font-size: 24px; font-weight: 900; margin: 0;">She PARK Designs</h1>
+        <p style="text-align: center; font-size: 10px; font-weight: bold; margin-bottom: 25px;">OFFICIAL INVOICE</p>
+        <p><strong>Order ID:</strong> #<span id="b-oid"></span></p>
+        <p><strong>Item:</strong> <span id="b-pname"></span> (<span id="b-psize"></span>)</p>
+        <p><strong>Price:</strong> ₹<span id="b-price"></span> + Shipping ₹<span id="b-ship"></span></p>
+        <h2 style="font-size: 26px; font-weight: 900; margin-top: 10px;">TOTAL: ₹<span id="b-total"></span></h2>
+        <p style="color: #db2777; font-weight: bold; margin-top: 10px;">Expected Delivery: <span id="b-edate"></span></p>
+        <div style="margin-top: 20px; background: #eee; padding: 15px; border-radius: 10px; font-size: 12px;">
+            <p><strong>Mobile:</strong> <span id="b-ph"></span></p>
+            <p><strong>Address:</strong> <span id="b-addr"></span></p>
+        </div>
+    </div>
+
+    <script>
+        const db = new Dexie("SheParkFinalBuild");
+        db.version(1).stores({
+            products: '++id, name, offer, category, sizes',
+            orders: '++id, ph, status, timestamp',
+            settings: 'key, value'
+        });
+
+        let cart = [];
+        let pressTimer;
+        let selectedSize = null;
+        let activeCategory = "All";
+        let activeSizeFilter = "All";
+        let checkoutItems = [];
+
+        async function init() {
+            const defaults = { 
+                upi: '9947142509@upi', ship: '50', phone: '9947142509', 
+                banner: '✨ She PARK Designs: Premium Quality Styles! ✨',
+                ig: '#', fb: '#', wa: '9947142509'
+            };
+            for (let [k, v] of Object.entries(defaults)) {
+                if (!(await db.settings.get(k))) await db.settings.add({ key: k, value: v });
+            }
+            await loadSettings();
+            await renderHome();
+        }
+
+        // NAVIGATION
+        function navigate(view) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('sec-' + view).classList.add('active');
+            toggleSideMenu(false);
+            if(view === 'home') renderHome();
+            if(view === 'admin') renderAdmin();
+            if(view === 'orders') renderUserOrders();
+            if(view === 'cart') renderCart();
+            if(view === 'contact') renderContact();
+            window.scrollTo(0,0);
+        }
+
+        function toggleSideMenu(show) { document.getElementById('side-overlay').classList.toggle('hidden', !show); }
+
+        const adminBtn = document.getElementById('brand-logo');
+        adminBtn.addEventListener('pointerdown', () => pressTimer = setTimeout(() => navigate('admin'), 3000));
+        adminBtn.addEventListener('pointerup', () => clearTimeout(pressTimer));
+
+        // HOME & FILTER SYSTEM
+        async function renderHome() {
+            let items = await db.products.toArray();
+            const query = document.getElementById('home-search').value.toLowerCase();
+            const sort = document.getElementById('home-sort').value;
+
+            // Categories list from DB
+            const categories = ["All", ...new Set(items.map(p => p.category).filter(c => c))];
+            // Filter Sizes updated to: M, L, XL, XXL, XXXL
+            const allSizes = ["All", "M", "L", "XL", "XXL", "XXXL"];
+
+            document.getElementById('filter-categories').innerHTML = categories.map(c => 
+                `<button onclick="setCategory('${c}')" class="filter-chip ${activeCategory === c ? 'active' : 'bg-white'}">${c.toUpperCase()}</button>`
+            ).join('');
+
+            document.getElementById('filter-sizes').innerHTML = allSizes.map(s => 
+                `<button onclick="setSizeFilter('${s}')" class="filter-chip ${activeSizeFilter === s ? 'active' : 'bg-white'}">${s}</button>`
+            ).join('');
+
+            // Apply filters
+            items = items.filter(p => {
+                const sMatch = p.name.toLowerCase().includes(query);
+                const cMatch = activeCategory === "All" || p.category === activeCategory;
+                const szMatch = activeSizeFilter === "All" || (p.sizes && p.sizes.toUpperCase().split(',').map(x=>x.trim()).includes(activeSizeFilter));
+                return sMatch && cMatch && szMatch;
+            });
+
+            if(sort === 'low') items.sort((a,b) => a.offer - b.offer);
+            else if(sort === 'high') items.sort((a,b) => b.offer - a.offer);
+            else items.reverse();
+
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = items.map(p => `
+                <div class="bg-white rounded-[2rem] shadow-lg overflow-hidden border border-white" onclick="showDetails(${p.id})">
+                    <img src="${p.img}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-black text-[11px] truncate text-gray-800">${p.name}</h3>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="mrp-strike text-[10px]">₹${p.mrp}</span>
+                            <span class="text-pink-600 font-black text-lg">₹${p.offer}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setCategory(c) { activeCategory = c; renderHome(); }
+        function setSizeFilter(s) { activeSizeFilter = s; renderHome(); }
+
+        async function showDetails(id) {
+            const p = await db.products.get(id);
+            selectedSize = null;
+            navigate('details');
+
+            const sizes = p.sizes ? p.sizes.split(',').map(s => s.trim()) : [];
+            const sizeHtml = sizes.length ? `
+                <div class="mb-4">
+                    <p class="text-[10px] font-bold text-gray-400 mb-2 uppercase">Select Size</p>
+                    <div class="flex gap-2">
+                        ${sizes.map(s => `<button onclick="pickSize(this, '${s}')" class="size-btn px-4 py-1.5 rounded-xl font-bold text-xs">${s}</button>`).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            document.getElementById('details-inject').innerHTML = `
+                <img src="${p.img}" class="w-full rounded-[2.5rem] shadow-xl mb-6 border-4 border-white">
+                <h2 class="text-3xl font-black text-gray-800 leading-tight mb-2">${p.name}</h2>
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="mrp-strike text-lg">₹${p.mrp}</span>
+                    <span class="text-4xl font-black text-pink-600">₹${p.offer}</span>
+                </div>
+                ${sizeHtml}
+                <div class="bg-white p-4 rounded-2xl mb-6 shadow-sm border border-pink-50">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Expected Delivery</p>
+                    <p class="font-black text-pink-600">${p.delivery || '7-10 Days'}</p>
+                </div>
+                <div class="mb-32">
+                    <p class="text-gray-500 text-sm whitespace-pre-line">${p.specs}</p>
+                </div>
+                <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl flex gap-3">
+                    <button onclick="addToCart(${p.id})" class="flex-1 border-2 border-pink-600 text-pink-600 py-4 rounded-2xl font-bold">CART</button>
+                    <button onclick="openCheckout([${p.id}])" class="flex-1 bg-pink-600 text-white py-4 rounded-2xl font-bold">BUY NOW</button>
+                </div>
+            `;
+        }
+
+        function pickSize(btn, s) {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedSize = s;
+        }
+
+        // CHECKOUT LOGIC
+        async function addToCart(id) {
+            const p = await db.products.get(id);
+            if(p.sizes && !selectedSize) return alert("Please select a size!");
+            cart.push({ ...p, selectedSize });
+            alert("Added to cart! 🛍️");
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            if(!cart.length) { list.innerHTML = `<p class="text-center py-20 text-gray-400">Cart is empty</p>`; document.getElementById('cart-summary').innerHTML = ""; return; }
+            let total = 0;
+            list.innerHTML = cart.map((p, i) => {
+                total += parseInt(p.offer);
+                return `<div class="bg-white p-4 rounded-2xl flex gap-4 items-center border shadow-sm">
+                    <img src="${p.img}" class="w-16 h-16 rounded-xl object-cover">
+                    <div class="flex-1"><h4 class="font-bold text-xs">${p.name} (${p.selectedSize || 'N/A'})</h4><p class="text-pink-600 font-bold">₹${p.offer}</p></div>
+                    <button onclick="cart.splice(${i},1);renderCart()" class="text-red-500">✕</button>
+                </div>`;
+            }).join('');
+            document.getElementById('cart-summary').innerHTML = `<button onclick="openCheckoutFromCart()" class="w-full bg-pink-600 text-white py-5 rounded-3xl font-black shadow-xl">CHECKOUT ₹${total}</button>`;
+        }
+
+        async function openCheckout(pIds) {
+            checkoutItems = [];
+            for(let id of pIds) {
+                const p = await db.products.get(id);
+                if(p.sizes && !selectedSize) return alert("Pick size!");
+                checkoutItems.push({ ...p, selectedSize });
+            }
+            startCheckout();
+        }
+
+        function openCheckoutFromCart() { checkoutItems = [...cart]; startCheckout(); }
+
+        async function startCheckout() {
+            navigate('checkout');
+            const ship = parseInt((await db.settings.get('ship')).value);
+            let sub = checkoutItems.reduce((a, b) => a + parseInt(b.offer), 0);
+            document.getElementById('checkout-total-area').innerHTML = `
+                <div class="flex justify-between text-gray-400 text-[10px] font-black uppercase"><span>Subtotal</span><span>₹${sub}</span></div>
+                <div class="flex justify-between text-gray-400 text-[10px] font-black uppercase mt-1"><span>Shipping</span><span>₹${ship}</span></div>
+                <div class="flex justify-between font-black text-2xl mt-4 text-gray-800"><span>Grand Total</span><span>₹${sub + ship}</span></div>
+            `;
+        }
+
+        document.getElementById('checkout-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const ph = document.getElementById('cust-whatsapp').value;
+            const addr = document.getElementById('cust-address').value;
+            const upiId = (await db.settings.get('upi')).value;
+            const ship = parseInt((await db.settings.get('ship')).value);
+            let total = 0;
+
+            for (let item of checkoutItems) {
+                const final = parseInt(item.offer) + ship;
+                total += final;
+                const oid = await db.orders.add({
+                    pName: item.name, total: final, size: item.selectedSize || 'Standard',
+                    ph, addr, status: 'Pending', date: new Date().toLocaleDateString(),
+                    eDate: item.delivery || '7 Days', adminCode: item.code
+                });
+                await generateBill(oid, item, ph, addr, ship, final);
+            }
+            window.location.href = `upi://pay?pa=${upiId}&pn=SheParkDesigns&am=${total}&cu=INR`;
+            cart = []; checkoutItems = []; navigate('orders');
+        };
+
+        async function generateBill(oid, item, ph, addr, ship, total) {
+            document.getElementById('b-oid').innerText = oid;
+            document.getElementById('b-pname').innerText = item.name;
+            document.getElementById('b-psize').innerText = item.selectedSize || 'Standard';
+            document.getElementById('b-price').innerText = item.offer;
+            document.getElementById('b-ship').innerText = ship;
+            document.getElementById('b-total').innerText = total;
+            document.getElementById('b-edate').innerText = item.delivery || '7 Days';
+            document.getElementById('b-ph').innerText = ph;
+            document.getElementById('b-addr').innerText = addr;
+            const canvas = await html2canvas(document.getElementById('bill-capture'));
+            await db.orders.update(oid, { bill: canvas.toDataURL("image/png") });
+        }
+
+        async function renderUserOrders() {
+            const os = await db.orders.reverse().toArray();
+            document.getElementById('orders-list').innerHTML = os.length ? os.map(o => `
+                <div class="bg-white p-5 rounded-[2rem] shadow-lg border-4 border-white">
+                    <div class="flex justify-between text-[10px] font-black mb-3">
+                        <span class="text-gray-300">#${o.id} • ${o.date}</span>
+                        <span class="bg-pink-600 text-white px-3 py-1 rounded-full uppercase">${o.status}</span>
+                    </div>
+                    <h3 class="font-black text-gray-800">${o.pName} (${o.size})</h3>
+                    <p class="text-xs text-pink-500 font-bold mb-4">Exp. Delivery: ${o.eDate}</p>
+                    <a href="${o.bill}" download="Bill_${o.id}.png" class="block text-center bg-gray-900 text-white py-3 rounded-2xl text-[10px] font-bold shadow-lg">Download Receipt Image</a>
+                </div>
+            `).join('') : '<p class="text-center py-20 text-gray-400">No orders placed yet.</p>';
+        }
+
+        // ADMIN CONTROLS
+        document.getElementById('product-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const f = document.getElementById('p-img').files[0];
+            let img = editId ? (await db.products.get(Number(editId))).img : null;
+            if(f) img = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result); reader.readAsDataURL(f); });
+
+            const data = {
+                name: document.getElementById('p-name').value, mrp: document.getElementById('p-mrp').value,
+                offer: document.getElementById('p-offer').value, category: document.getElementById('p-category').value,
+                sizes: document.getElementById('p-sizes').value, delivery: document.getElementById('p-delivery').value,
+                code: document.getElementById('p-code').value, specs: document.getElementById('p-specs').value, img
+            };
+            if(editId) await db.products.update(Number(editId), data); else await db.products.add(data);
+            e.target.reset(); document.getElementById('edit-id').value = ""; navigate('home');
+        };
+
+        async function renderAdmin() {
+            const ps = await db.products.toArray();
+            document.getElementById('adm-p-list').innerHTML = ps.map(p => `
+                <div class="flex items-center gap-3 bg-white p-2 rounded-2xl border shadow-sm mb-2">
+                    <img src="${p.img}" class="w-12 h-12 rounded-xl object-cover">
+                    <div class="flex-1 text-[10px] font-bold truncate">${p.name}</div>
+                    <button onclick="editP(${p.id})" class="text-blue-500 font-bold px-2">Edit</button>
+                    <button onclick="db.products.delete(${p.id}).then(renderAdmin)" class="text-red-500 font-bold px-2">Del</button>
+                </div>
+            `).join('');
+
+            const os = await db.orders.reverse().toArray();
+            document.getElementById('adm-o-list').innerHTML = os.map(o => `
+                <div class="bg-white p-4 rounded-2xl border text-[10px] shadow-md space-y-2 mb-3">
+                    <div class="flex justify-between font-black"><span>ID: #${o.id} • WhatsApp: ${o.ph}</span><span class="text-blue-600">CODE: ${o.adminCode}</span></div>
+                    <p class="text-gray-400 font-bold">${o.addr} | Size: ${o.size}</p>
+                    <div class="flex gap-2 pt-2 border-t border-dashed">
+                        <select onchange="db.orders.update(${o.id}, {status: this.value})" class="flex-1 bg-gray-50 p-2 rounded-lg font-bold">
+                            <option ${o.status==='Pending'?'selected':''}>Pending</option>
+                            <option ${o.status==='Shipped'?'selected':''}>Shipped</option>
+                            <option ${o.status==='Delivered'?'selected':''}>Delivered</option>
+                        </select>
+                        <button onclick="db.orders.delete(${o.id}).then(renderAdmin)" class="bg-red-600 text-white px-4 py-2 rounded-lg font-black">CLEAR</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function editP(id) {
+            const p = await db.products.get(id);
+            adminTab('add');
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-mrp').value = p.mrp;
+            document.getElementById('p-offer').value = p.offer;
+            document.getElementById('p-category').value = p.category || "";
+            document.getElementById('p-sizes').value = p.sizes || "";
+            document.getElementById('p-delivery').value = p.delivery || "";
+            document.getElementById('p-code').value = p.code || "";
+            document.getElementById('p-specs').value = p.specs;
+        }
+
+        async function saveSettings() {
+            await db.settings.put({key: 'banner', value: document.getElementById('set-banner').value});
+            await db.settings.put({key: 'upi', value: document.getElementById('set-upi').value});
+            await db.settings.put({key: 'ship', value: document.getElementById('set-ship').value});
+            await db.settings.put({key: 'phone', value: document.getElementById('set-phone').value});
+            await db.settings.put({key: 'ig', value: document.getElementById('set-ig').value});
+            await db.settings.put({key: 'fb', value: document.getElementById('set-fb').value});
+            await db.settings.put({key: 'wa', value: document.getElementById('set-wa').value});
+            alert("Configuration Saved!"); loadSettings();
+        }
+
+        async function loadSettings() {
+            const b = await db.settings.get('banner');
+            document.getElementById('banner-text').innerText = b.value;
+            document.getElementById('set-banner').value = b.value;
+            document.getElementById('set-upi').value = (await db.settings.get('upi')).value;
+            document.getElementById('set-ship').value = (await db.settings.get('ship')).value;
+            document.getElementById('set-phone').value = (await db.settings.get('phone')).value;
+            document.getElementById('set-ig').value = (await db.settings.get('ig')).value;
+            document.getElementById('set-fb').value = (await db.settings.get('fb')).value;
+            document.getElementById('set-wa').value = (await db.settings.get('wa')).value;
+        }
+
+        function adminTab(t) { document.querySelectorAll('.admin-tab').forEach(x => x.classList.add('hidden')); document.getElementById('adm-' + t).classList.remove('hidden'); }
+
+        async function renderContact() {
+            const ph = (await db.settings.get('phone')).value;
+            const ig = (await db.settings.get('ig')).value;
+            const fb = (await db.settings.get('fb')).value;
+            const wa = (await db.settings.get('wa')).value;
+
+            document.getElementById('contact-info-inject').innerHTML = `<a href="tel:${ph}" class="text-4xl font-black underline tracking-tighter text-gray-800">${ph}</a>`;
+            
+            document.getElementById('social-links-inject').innerHTML = `
+                <a href="${ig}" target="_blank" class="social-link bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 shadow-md"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+                <a href="${fb}" target="_blank" class="social-link bg-blue-600 shadow-md"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg></a>
+                <a href="https://wa.me/${wa}" target="_blank" class="social-link bg-[#25D366] shadow-md"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.2-8.5-44.2-27.1-16.4-14.6-27.4-32.7-30.6-38.2-3.2-5.6-.3-8.6 2.5-11.3 2.5-2.5 5.6-6.5 8.3-9.8 2.8-3.2 3.7-5.5 5.5-9.3 1.9-3.7.9-6.9-.5-9.8-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.5 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg></a>
+            `;
+        }
+
+        init();
+    </script>
+</body>
+</html>
